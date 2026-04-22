@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Arduino build output
+build/
+*.bin
+*.elf
+*.hex
+*.map
+
+# hook installer 自动备份
+*.bak.*
+
+# 编辑器
+.idea/
+.vscode/
+!.vscode/tasks.json
+
+# 本地私有调试脚本
+scratch/
+tmp/

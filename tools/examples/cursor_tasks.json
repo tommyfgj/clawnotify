@@ -1,0 +1,27 @@
+{
+  "_comment": "Merge into .vscode/tasks.json at the root of your Cursor project. Replace <REPO> with the absolute path to this repo. Invoke via ⌘⇧P → Run Task → clawbot: <name>.",
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "clawbot: attention",
+      "type": "shell",
+      "command": "<REPO>/tools/notify.py attention",
+      "presentation": { "reveal": "never", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "clawbot: done",
+      "type": "shell",
+      "command": "<REPO>/tools/notify.py done",
+      "presentation": { "reveal": "never", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "clawbot: error",
+      "type": "shell",
+      "command": "<REPO>/tools/notify.py error",
+      "presentation": { "reveal": "never", "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ]
+}

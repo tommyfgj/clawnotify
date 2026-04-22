@@ -1,0 +1,38 @@
+{
+  "_comment": "Merge into ~/.codebuddy/settings.json or project-level .codebuddy/settings.json. Replace <REPO> with the absolute path to this repo. Prefer tools/install_hooks.py.",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<REPO>/tools/notify.py done >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<REPO>/tools/notify.py heartbeat >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "execute_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<REPO>/tools/notify.py attention >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ]
+  }
+}

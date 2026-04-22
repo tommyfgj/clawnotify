@@ -1,0 +1,38 @@
+{
+  "_comment": "Merge into ~/.claude/settings.json. Replace <REPO> with the absolute path to this repo (e.g. $HOME/code/clawnotify). Prefer using tools/install_hooks.py which does this automatically.",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<REPO>/tools/notify.py done >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<REPO>/tools/notify.py ask >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<REPO>/tools/notify.py attention >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ]
+  }
+}
