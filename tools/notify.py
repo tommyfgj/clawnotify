@@ -52,10 +52,30 @@ PORT_PATTERNS = [
 ]
 
 
+def _find_port_windows() -> str:
+    # ESP32-C3 USB-CDC: VID=0x303A, PID=0x1001
+    from serial.tools import list_ports
+    ports = list(list_ports.comports())
+    esp = [p.device for p in ports if (p.vid, p.pid) == (0x303A, 0x1001)]
+    if esp:
+        return sorted(esp)[0]
+    # 退化：任意非 COM1 的 USB 串口（CH340/CP210x 等第三方 USB-UART）
+    others = [p.device for p in ports
+              if p.device.upper() != "COM1" and (p.vid is not None)]
+    if not others:
+        sys.stderr.write(
+            "[notify] 未找到串口设备。请插好 ESP32-C3，或用 CLAWBOT_PORT 显式指定（例如 COM5）。\n"
+        )
+        sys.exit(2)
+    return sorted(others)[0]
+
+
 def find_port() -> str:
     env = os.environ.get("CLAWBOT_PORT", "").strip()
     if env:
         return env
+    if sys.platform == "win32":
+        return _find_port_windows()
     candidates = []
     for pat in PORT_PATTERNS:
         candidates.extend(sorted(glob.glob(pat)))
@@ -167,7 +187,33 @@ def cmd_pattern(ser, seq) -> str:
     return send_cmd(ser, f"PATTERN {payload}", wait_s=max(3.0, sum(seq) / 1000 + 2.0))
 
 
+def _maybe_detach() -> None:
+    """Windows：`--detach` 让脚本把自己重生成一个脱离控制台的子进程并立即退出。
+
+    hook 回调被 Claude Code 通过 cmd.exe 短生命周期 shell 调起；如果直接用
+    `start /b` 挂后台，父 cmd 退出会顺带把子进程干掉。走 DETACHED_PROCESS +
+    CREATE_NEW_PROCESS_GROUP 才能真正脱离。
+    """
+    if sys.platform != "win32" or "--detach" not in sys.argv:
+        return
+    import subprocess
+    args = [a for a in sys.argv if a != "--detach"]
+    DETACHED_PROCESS = 0x00000008
+    CREATE_NO_WINDOW = 0x08000000
+    CREATE_NEW_PROCESS_GROUP = 0x00000200
+    subprocess.Popen(
+        [sys.executable] + args,
+        creationflags=DETACHED_PROCESS | CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP,
+        close_fds=True,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    sys.exit(0)
+
+
 def main():
+    _maybe_detach()
     ap = argparse.ArgumentParser(
         prog="notify",
         description="Agent Notifier — 通过电磁铁敲击提醒",

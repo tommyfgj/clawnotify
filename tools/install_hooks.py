@@ -40,6 +40,23 @@ SHOULD = HERE / "should_notify.sh"
 MARK_KEY = "_clawbot_managed"   # 用来标记我们添加的 hook 条目
 MARK_VAL = True
 
+IS_WIN = os.name == "nt"
+
+if IS_WIN:
+    # Windows 中文控制台默认 GBK，打印 ✓/✗ 会抛 UnicodeEncodeError。
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+
+def _pythonw() -> str:
+    """Windows: 返回 pythonw.exe（无控制台窗口），找不到就退回 python.exe。"""
+    exe = pathlib.Path(sys.executable)
+    pw = exe.with_name("pythonw.exe")
+    return str(pw if pw.exists() else exe)
+
 # ---------- 通用工具 ----------
 
 def banner(msg: str) -> None:
@@ -85,6 +102,12 @@ def cmd_with_guard(
                      不盯着看，任务完成一律要提醒。
     env: 注入到 should_notify.sh 的环境变量，仅在 skip_guard=False 时生效。
     """
+    if IS_WIN:
+        # Windows 上没有 should_notify.sh（依赖 osascript/Quartz/ioreg），直接敲。
+        # 用 notify.py 自带的 --detach：把自己 Popen 成 DETACHED_PROCESS 子进程
+        # 后立刻 exit，这样 Claude 的 hook shell 回合瞬间返回，真正干活的进程
+        # 脱离控制台独立存活。pythonw.exe 避免 Stop 时闪一下控制台窗口。
+        return f'"{_pythonw()}" "{NOTIFY}" --detach {pattern}'
     if skip_guard:
         return f"( {NOTIFY} {pattern} ) >/dev/null 2>&1 &"
     env_prefix = ""
@@ -111,6 +134,8 @@ def make_hook_entry(
     }
 
 def ensure_executable(*paths: pathlib.Path) -> None:
+    if IS_WIN:
+        return  # Windows 上没有 +x 位；.py 通过 python/pythonw 显式调起
     for p in paths:
         if p.exists():
             p.chmod(p.stat().st_mode | 0o111)
@@ -224,6 +249,21 @@ CURSOR_RULE_HINT = (
 )
 
 def _cursor_tasks() -> list[dict]:
+    if IS_WIN:
+        # Windows：type=process 直接起 python，绕开 cmd/pwsh 的引号差异。
+        py = _pythonw()
+        return [
+            {
+                "label": f"clawbot: {p}",
+                "type": "process",
+                "command": py,
+                "args": [str(NOTIFY), p],
+                "presentation": {"reveal": "never", "panel": "dedicated"},
+                "problemMatcher": [],
+                MARK_KEY: MARK_VAL,
+            }
+            for p in ("attention", "done", "error")
+        ]
     return [
         {
             "label": f"clawbot: {p}",
